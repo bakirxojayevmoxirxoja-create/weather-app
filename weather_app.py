@@ -251,9 +251,41 @@ if st.session_state.view == "🗺️ Interaktiv Xarita":
         m = folium.Map(
             location=[center_lat, center_lon],
             zoom_start=zoom,
-            tiles='CartoDB dark_matter',
-            prefer_canvas=True
+            tiles=None,
+            scrollWheelZoom=True,
+            dragging=True,
         )
+
+        # OpenStreetMap — asosiy
+        folium.TileLayer(
+            tiles='OpenStreetMap',
+            name='🗺️ Oddiy xarita',
+            attr='OpenStreetMap'
+        ).add_to(m)
+
+        # Satellite xarita — ESRI
+        folium.TileLayer(
+            tiles='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+            attr='Esri',
+            name='🛰️ Satellite',
+        ).add_to(m)
+
+        # Google Maps uslubi
+        folium.TileLayer(
+            tiles='https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
+            attr='Google',
+            name='🌐 Google Maps',
+        ).add_to(m)
+
+        # Google Satellite
+        folium.TileLayer(
+            tiles='https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
+            attr='Google',
+            name='🌍 Google Satellite',
+        ).add_to(m)
+
+        # Qatlam tanlash tugmasi
+        folium.LayerControl(position='topright').add_to(m)
 
         # Agar joy tanlangan bo'lsa marker qo'y
         if st.session_state.map_lat and st.session_state.map_weather:
@@ -274,7 +306,13 @@ if st.session_state.view == "🗺️ Interaktiv Xarita":
             ).add_to(m)
 
         # Xaritani ko'rsat va klik ma'lumotini ol
-        map_data = st_folium(m, width=None, height=500, returned_objects=["last_clicked"])
+        map_data = st_folium(
+            m,
+            width="100%",
+            height=520,
+            returned_objects=["last_clicked"],
+            key="main_map"
+        )
 
         # Klik bo'lsa ob-havoni ol
         if map_data and map_data.get("last_clicked"):
