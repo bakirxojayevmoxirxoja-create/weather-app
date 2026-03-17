@@ -5,8 +5,9 @@ import numpy as np
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from datetime import datetime
-import pytz
 from collections import Counter
+import folium
+from streamlit_folium import st_folium
 
 st.set_page_config(
     page_title="WeatherXoja", page_icon="⛅",
@@ -16,113 +17,52 @@ st.set_page_config(
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Syne:wght@400;700;800&display=swap');
-
 * { font-family: 'Space Grotesk', sans-serif; }
 h1, h2, h3 { font-family: 'Syne', sans-serif; }
-
 .stApp { background: #060b14; }
 [data-testid="stSidebar"] { background: #0a1020 !important; border-right: 1px solid #1a2540; }
 [data-testid="stSidebar"] * { color: #c8d8f0 !important; }
-
 .weather-hero {
     background: linear-gradient(135deg, #0f2040 0%, #1a3a6e 50%, #0f2040 100%);
-    border: 1px solid #1e3a6e;
-    border-radius: 24px; padding: 36px;
-    box-shadow: 0 0 60px rgba(30,90,200,0.15), inset 0 1px 0 rgba(255,255,255,0.05);
-    margin-bottom: 24px; position: relative; overflow: hidden;
+    border: 1px solid #1e3a6e; border-radius: 24px; padding: 36px;
+    box-shadow: 0 0 60px rgba(30,90,200,0.15); margin-bottom: 24px;
 }
-.weather-hero::before {
-    content: ''; position: absolute; top: -50%; right: -20%;
-    width: 500px; height: 500px;
-    background: radial-gradient(circle, rgba(50,120,255,0.08) 0%, transparent 70%);
-    pointer-events: none;
-}
-.hero-city { font-family: 'Syne', sans-serif; font-size: 2.4rem; font-weight: 800;
-             color: #e8f0ff; margin: 0; letter-spacing: -0.5px; }
-.hero-date { color: #6080b0; font-size: 0.9rem; margin-top: 4px; }
-.hero-temp { font-family: 'Syne', sans-serif; font-size: 5rem; font-weight: 800;
-             color: #fff; line-height: 1; letter-spacing: -2px; }
-.hero-desc { color: #7090c0; font-size: 1rem; margin-top: 4px; text-transform: capitalize; }
-.hero-feels { color: #5070a0; font-size: 0.85rem; margin-top: 2px; }
-.sun-row { display: flex; gap: 24px; margin-top: 20px;
-           background: rgba(255,255,255,0.03); border-radius: 12px; padding: 12px 20px;
-           border: 1px solid rgba(255,255,255,0.05); }
-.sun-item { color: #7090c0; font-size: 0.85rem; }
-.sun-item b { color: #a0c0e8; }
-
-.stat-card {
-    background: #0a1525; border: 1px solid #1a2a45;
-    border-radius: 18px; padding: 22px; text-align: center;
-    transition: all 0.3s ease; position: relative; overflow: hidden;
-}
-.stat-card:hover { border-color: #2a4a80; transform: translateY(-2px);
-                   box-shadow: 0 8px 30px rgba(20,60,150,0.2); }
-.stat-card::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0;
-                    height: 2px; background: linear-gradient(90deg, transparent, #2a5fc0, transparent); }
-.stat-icon { font-size: 1.8rem; margin-bottom: 8px; }
-.stat-val { font-family: 'Syne', sans-serif; font-size: 1.6rem; font-weight: 700; color: #d0e4ff; }
-.stat-lbl { font-size: 0.75rem; color: #4060a0; text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
-
-.day-card {
-    background: #0a1525; border: 1px solid #1a2a45;
-    border-radius: 16px; padding: 18px; text-align: center;
-    transition: all 0.2s; cursor: default;
-}
-.day-card:hover { border-color: #2a4a80; background: #0e1d35; }
-.day-name { color: #4060a0; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
-.day-emoji { font-size: 2rem; margin: 10px 0; }
-.day-temps { color: #d0e4ff; font-weight: 600; font-size: 0.95rem; }
-.day-meta { color: #304060; font-size: 0.75rem; margin-top: 6px; }
-
-.map-info {
-    background: #0a1525; border: 1px solid #1a2a45;
-    border-radius: 18px; padding: 24px; height: 100%;
-}
-.map-city { font-family: 'Syne', sans-serif; font-size: 1.6rem; font-weight: 700; color: #e0eeff; }
-.map-temp { font-family: 'Syne', sans-serif; font-size: 3.5rem; font-weight: 800;
-            color: #4080ff; line-height: 1; margin: 8px 0; }
-.map-table td { padding: 6px 0; color: #8090b0; font-size: 0.9rem; }
-.map-table td:last-child { text-align: right; color: #c0d8f8; font-weight: 500; }
-
-.section-title { font-family: 'Syne', sans-serif; font-size: 1.1rem; font-weight: 700;
-                 color: #4060a0; text-transform: uppercase; letter-spacing: 2px;
-                 margin: 28px 0 16px; border-left: 3px solid #2a5fc0; padding-left: 12px; }
-
-div[data-testid="stButton"] button {
-    background: #0e1d35 !important; color: #8090b0 !important;
-    border: 1px solid #1a2a45 !important; border-radius: 10px !important;
-    font-size: 0.8rem !important; transition: all 0.2s !important;
-}
-div[data-testid="stButton"] button:hover {
-    background: #162840 !important; border-color: #2a4a80 !important;
-    color: #c0d8f8 !important;
-}
-div[data-testid="stButton"] button[kind="primary"] {
-    background: linear-gradient(135deg, #1a3a7e, #2a5fc0) !important;
-    color: white !important; border: none !important;
-}
+.hero-city { font-family:'Syne',sans-serif; font-size:2.4rem; font-weight:800; color:#e8f0ff; margin:0; }
+.hero-date { color:#6080b0; font-size:0.9rem; margin-top:4px; }
+.hero-temp { font-family:'Syne',sans-serif; font-size:5rem; font-weight:800; color:#fff; line-height:1; }
+.hero-desc { color:#7090c0; font-size:1rem; text-transform:capitalize; }
+.sun-row { display:flex; gap:24px; margin-top:20px; background:rgba(255,255,255,0.03);
+           border-radius:12px; padding:12px 20px; border:1px solid rgba(255,255,255,0.05); }
+.sun-item { color:#7090c0; font-size:0.85rem; }
+.sun-item b { color:#a0c0e8; }
+.stat-card { background:#0a1525; border:1px solid #1a2a45; border-radius:18px; padding:22px;
+             text-align:center; }
+.stat-val { font-family:'Syne',sans-serif; font-size:1.6rem; font-weight:700; color:#d0e4ff; }
+.stat-lbl { font-size:0.75rem; color:#4060a0; text-transform:uppercase; letter-spacing:1px; margin-top:4px; }
+.map-info { background:#0a1525; border:1px solid #1a2a45; border-radius:18px; padding:24px; }
+.map-city { font-family:'Syne',sans-serif; font-size:1.6rem; font-weight:700; color:#e0eeff; }
+.map-temp { font-family:'Syne',sans-serif; font-size:3.5rem; font-weight:800; color:#4080ff; line-height:1; margin:8px 0; }
+.map-table td { padding:7px 0; color:#8090b0; font-size:0.9rem; border-bottom:1px solid #0e1d35; }
+.map-table td:last-child { text-align:right; color:#c0d8f8; font-weight:500; }
+.section-title { font-family:'Syne',sans-serif; font-size:1rem; font-weight:700; color:#4060a0;
+                 text-transform:uppercase; letter-spacing:2px; margin:28px 0 16px;
+                 border-left:3px solid #2a5fc0; padding-left:12px; }
+.day-card { background:#0a1525; border:1px solid #1a2a45; border-radius:16px; padding:18px; text-align:center; }
+.day-name { color:#4060a0; font-size:0.75rem; text-transform:uppercase; letter-spacing:1px; font-weight:600; }
+.day-temps { color:#d0e4ff; font-weight:600; font-size:0.95rem; }
+.day-meta { color:#304060; font-size:0.75rem; margin-top:6px; }
+.click-hint { background:linear-gradient(135deg,#0a1525,#0e1d35); border:1px solid #1a2a45;
+              border-radius:12px; padding:14px 20px; color:#6080b0; font-size:0.9rem;
+              text-align:center; margin-bottom:16px; }
 </style>
 """, unsafe_allow_html=True)
 
 API_KEY = "ed304f5f1a412948049440ecc9bb0e3f"
 BASE_URL = "http://api.openweathermap.org/data/2.5/"
 
-CITIES = {
-    "Toshkent": (41.2995, 69.2401), "Samarqand": (39.6542, 66.9597),
-    "Namangan": (41.0011, 71.6726), "Andijon": (40.7821, 72.3442),
-    "Buxoro": (39.7747, 64.4286), "Nukus": (42.4500, 59.6106),
-    "London": (51.5074, -0.1278), "New York": (40.7128, -74.0060),
-    "Tokyo": (35.6762, 139.6503), "Paris": (48.8566, 2.3522),
-    "Dubai": (25.2048, 55.2708), "Moscow": (55.7558, 37.6176),
-    "Singapore": (1.3521, 103.8198), "Sydney": (-33.8688, 151.2093),
-    "Beijing": (39.9042, 116.4074), "Berlin": (52.5200, 13.4050),
-    "Istanbul": (41.0082, 28.9784), "Cairo": (30.0444, 31.2357),
-    "Seoul": (37.5665, 126.9780), "Mumbai": (19.0760, 72.8777),
-    "Toronto": (43.6532, -79.3832), "Bangkok": (13.7563, 100.5018),
-}
-
 # Session state
-for k, v in [('map_weather', None), ('search_city', ''), ('do_search', False), ('view', '🏠 Asosiy')]:
+for k, v in [('map_weather', None), ('search_city', ''), ('do_search', False),
+             ('view', '🏠 Asosiy'), ('map_lat', None), ('map_lon', None)]:
     if k not in st.session_state:
         st.session_state[k] = v
 
@@ -131,9 +71,9 @@ for k, v in [('map_weather', None), ('search_city', ''), ('do_search', False), (
 def fetch_weather(city=None, lat=None, lon=None):
     try:
         if city:
-            url = f"{BASE_URL}weather?q={city}&appid={API_KEY}&units=metric&lang=en"
+            url = f"{BASE_URL}weather?q={city}&appid={API_KEY}&units=metric"
         else:
-            url = f"{BASE_URL}weather?lat={lat}&lon={lon}&appid={API_KEY}&units=metric&lang=en"
+            url = f"{BASE_URL}weather?lat={lat}&lon={lon}&appid={API_KEY}&units=metric"
         r = requests.get(url, timeout=10)
         if r.status_code == 200:
             return _parse(r.json())
@@ -147,16 +87,16 @@ def fetch_forecast(city):
         r = requests.get(f"{BASE_URL}forecast?q={city}&appid={API_KEY}&units=metric", timeout=10)
         if r.status_code == 200:
             d = r.json()
-            tz_offset = d['city']['timezone']
+            tz = d['city']['timezone']
             items = []
             for item in d['list']:
-                lt = datetime.utcfromtimestamp(item['dt']) + pd.Timedelta(seconds=tz_offset)
+                lt = datetime.utcfromtimestamp(item['dt']) + pd.Timedelta(seconds=tz)
                 items.append({
                     'datetime': lt, 'date': lt.strftime('%Y-%m-%d'),
-                    'day_name': lt.strftime('%A'), 'hour': lt.strftime('%H:%M'),
-                    'temp': item['main']['temp'], 'temp_min': item['main']['temp_min'],
-                    'temp_max': item['main']['temp_max'], 'humidity': item['main']['humidity'],
-                    'wind_speed': item['wind']['speed'],
+                    'day_name': lt.strftime('%A'),
+                    'temp': item['main']['temp'],
+                    'temp_min': item['main']['temp_min'], 'temp_max': item['main']['temp_max'],
+                    'humidity': item['main']['humidity'], 'wind_speed': item['wind']['speed'],
                     'description': item['weather'][0]['description'],
                     'pop': item.get('pop', 0) * 100
                 })
@@ -167,7 +107,6 @@ def fetch_forecast(city):
 
 def _parse(d):
     tz = d['timezone']
-    # UTC + timezone offset
     lt = datetime.utcfromtimestamp(d['dt']) + pd.Timedelta(seconds=tz)
     sr = datetime.utcfromtimestamp(d['sys']['sunrise']) + pd.Timedelta(seconds=tz)
     ss = datetime.utcfromtimestamp(d['sys']['sunset']) + pd.Timedelta(seconds=tz)
@@ -226,84 +165,129 @@ def wdir(deg):
     d = ['N','NE','E','SE','S','SW','W','NW']
     return d[int((deg+22.5)/45)%8]
 
-def plotly_dark():
+def plotly_cfg():
     return dict(template='plotly_dark', paper_bgcolor='rgba(0,0,0,0)',
-                plot_bgcolor='rgba(6,11,20,0.8)',
-                font=dict(color='#6080b0', family='Space Grotesk'))
+                plot_bgcolor='rgba(6,11,20,0.8)', font=dict(color='#6080b0'))
+
+def show_hero(w):
+    e = emo(w['description'])
+    st.markdown(f"""
+    <div class="weather-hero">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:20px;">
+            <div>
+                <div class="hero-city">📍 {w['city']}, {w['country']}</div>
+                <div class="hero-date">{w['local_date']} · {w['local_time']} · {w['timezone']}</div>
+                <div style="font-size:3.5rem;margin:16px 0 4px;">{e}</div>
+                <div class="hero-desc">{w['description'].title()}</div>
+            </div>
+            <div style="text-align:right;">
+                <div class="hero-temp">{w['temp']:.1f}°</div>
+                <div style="color:#5070a0;font-size:0.9rem;">His: {w['feels_like']:.1f}°C</div>
+                <div style="color:#3050a0;font-size:0.85rem;margin-top:4px;">
+                    ↓{w['temp_min']:.1f}° &nbsp; ↑{w['temp_max']:.1f}°
+                </div>
+            </div>
+        </div>
+        <div class="sun-row">
+            <span class="sun-item">🌅 Chiqish: <b>{w['sunrise']}</b></span>
+            <span class="sun-item">🌇 Botish: <b>{w['sunset']}</b></span>
+            <span class="sun-item">☁️ Bulut: <b>{w['clouds']}%</b></span>
+            <span class="sun-item">🕐 <b>{w['local_time']}</b></span>
+        </div>
+    </div>""", unsafe_allow_html=True)
+    c1,c2,c3,c4 = st.columns(4)
+    for col,icon,val,lbl in [
+        (c1,"💧",f"{w['humidity']}%","Namlik"),
+        (c2,"💨",f"{w['wind_speed']} m/s","Shamol · "+wdir(w['wind_deg'])),
+        (c3,"🌀",f"{w['pressure']}","Bosim hPa"),
+        (c4,"☁️",f"{w['clouds']}%","Bulutlilik"),
+    ]:
+        with col:
+            st.markdown(f"""<div class="stat-card">
+                <div style="font-size:1.8rem;">{icon}</div>
+                <div class="stat-val">{val}</div>
+                <div class="stat-lbl">{lbl}</div>
+            </div>""", unsafe_allow_html=True)
+    st.markdown("<br>", unsafe_allow_html=True)
 
 # ── SIDEBAR ───────────────────────────────────────────────────────────────────
 with st.sidebar:
     st.markdown("## ⛅ WeatherXoja")
     st.markdown("---")
-    city_in = st.text_input("🔍 Shahar", placeholder="London, Tokyo, Toshkent...")
-    popular = st.selectbox("⚡ Tez tanlash", [""]+list(CITIES.keys()))
-    if popular:
-        city_in = popular
+    city_in = st.text_input("🔍 Shahar", placeholder="London, Toshkent, Tokyo...")
     if st.button("Qidirish", use_container_width=True, type="primary"):
         st.session_state.search_city = city_in
         st.session_state.do_search = True
         st.rerun()
     st.markdown("---")
-    view = st.radio("Ko'rinish", ["🏠 Asosiy","📈 Soatlik","📅 Kunlik","🗺️ Xarita","🎯 Dashboard"])
+    view = st.radio("Ko'rinish", ["🏠 Asosiy","📈 Soatlik","📅 Kunlik","🗺️ Interaktiv Xarita","🎯 Dashboard"])
     st.session_state.view = view
     st.markdown("---")
-    st.caption("⛅ WeatherXoja\nReal vaqt ob-havo tizimi\nPowered by OpenWeatherMap")
+    st.caption("⛅ WeatherXoja\nReal vaqt ob-havo\nPowered by OpenWeatherMap")
 
-# ── SARLAVHA ──────────────────────────────────────────────────────────────────
 st.markdown("# ⛅ WeatherXoja")
 
 # ══════════════════════════════════════════════════════════════════════════════
-# 🗺️ INTERAKTIV XARITA
+# 🗺️ INTERAKTIV XARITA — FOLIUM
 # ══════════════════════════════════════════════════════════════════════════════
-if st.session_state.view == "🗺️ Xarita":
-    st.markdown('<div class="section-title">Interaktiv Dunyo Xaritasi</div>', unsafe_allow_html=True)
-    st.info("👇 Quyidagi shaharlardan birini bosing → ob-havo ma'lumoti chiqadi!")
+if st.session_state.view == "🗺️ Interaktiv Xarita":
+    st.markdown('<div class="section-title">Interaktiv Xarita — Istalgan joyni bosing!</div>', unsafe_allow_html=True)
+
+    st.markdown("""
+    <div class="click-hint">
+        🖱️ <b>Xaritada istalgan joyni bosing</b> → O'sha joyning ob-havosi chiqadi!<br>
+        <small>Shaharni yaqinlashtirish uchun scroll yoki + tugmasidan foydalaning</small>
+    </div>
+    """, unsafe_allow_html=True)
 
     col_map, col_info = st.columns([3, 2])
 
     with col_map:
-        lats = [v[0] for v in CITIES.values()]
-        lons = [v[1] for v in CITIES.values()]
-        names = list(CITIES.keys())
-        sel = st.session_state.map_weather['city'] if st.session_state.map_weather else ""
-        colors = ['#ff4757' if sel.lower() in n.lower() else '#2a5fc0' for n in names]
-        sizes  = [20 if sel.lower() in n.lower() else 10 for n in names]
+        # Folium xarita yaratish
+        center_lat = st.session_state.map_lat or 30.0
+        center_lon = st.session_state.map_lon or 50.0
+        zoom = 10 if st.session_state.map_lat else 3
 
-        fig_map = go.Figure(go.Scattergeo(
-            lat=lats, lon=lons, text=names,
-            mode='markers+text', textposition='top center',
-            textfont=dict(size=9, color='#8090b0'),
-            marker=dict(size=sizes, color=colors,
-                        line=dict(width=1.5, color='rgba(255,255,255,0.3)')),
-            hovertemplate='<b>%{text}</b><extra></extra>'
-        ))
-        fig_map.update_layout(
-            geo=dict(
-                showland=True, landcolor='#0e1d35',
-                showocean=True, oceancolor='#060b14',
-                showcoastlines=True, coastlinecolor='#1a2a45',
-                showcountries=True, countrycolor='#1a2a45',
-                showframe=False, bgcolor='#060b14',
-                projection_type='natural earth',
-                showlakes=True, lakecolor='#060b14',
-            ),
-            paper_bgcolor='#060b14', height=440,
-            margin=dict(l=0, r=0, t=0, b=0)
+        m = folium.Map(
+            location=[center_lat, center_lon],
+            zoom_start=zoom,
+            tiles='CartoDB dark_matter',
+            prefer_canvas=True
         )
-        st.plotly_chart(fig_map, use_container_width=True)
 
-        # Tugmalar
-        st.markdown('<div class="section-title">Shahar tanlang</div>', unsafe_allow_html=True)
-        city_list = list(CITIES.keys())
-        for row in [city_list[i:i+6] for i in range(0, len(city_list), 6)]:
-            cols = st.columns(len(row))
-            for i, city in enumerate(row):
-                with cols[i]:
-                    if st.button(city, key=f"mb_{city}", use_container_width=True):
-                        lat, lon = CITIES[city]
-                        w = fetch_weather(lat=lat, lon=lon)
-                        st.session_state.map_weather = w
-                        st.rerun()
+        # Agar joy tanlangan bo'lsa marker qo'y
+        if st.session_state.map_lat and st.session_state.map_weather:
+            w = st.session_state.map_weather
+            popup_html = f"""
+            <div style="font-family:Arial;min-width:150px;">
+                <b style="font-size:14px;">{w['city']}, {w['country']}</b><br>
+                <span style="font-size:22px;font-weight:bold;color:#4080ff;">{w['temp']:.1f}°C</span><br>
+                {w['description'].title()}<br>
+                💧 {w['humidity']}% &nbsp; 💨 {w['wind_speed']} m/s
+            </div>
+            """
+            folium.Marker(
+                location=[st.session_state.map_lat, st.session_state.map_lon],
+                popup=folium.Popup(popup_html, max_width=200),
+                tooltip=f"📍 {w['city']} — {w['temp']:.1f}°C",
+                icon=folium.Icon(color='blue', icon='cloud', prefix='fa')
+            ).add_to(m)
+
+        # Xaritani ko'rsat va klik ma'lumotini ol
+        map_data = st_folium(m, width=None, height=500, returned_objects=["last_clicked"])
+
+        # Klik bo'lsa ob-havoni ol
+        if map_data and map_data.get("last_clicked"):
+            clicked = map_data["last_clicked"]
+            lat = clicked["lat"]
+            lon = clicked["lng"]
+
+            if lat != st.session_state.map_lat or lon != st.session_state.map_lon:
+                st.session_state.map_lat = lat
+                st.session_state.map_lon = lon
+                with st.spinner("⛅ Ob-havo yuklanmoqda..."):
+                    st.session_state.map_weather = fetch_weather(lat=round(lat,4), lon=round(lon,4))
+                st.rerun()
 
     with col_info:
         if st.session_state.map_weather:
@@ -313,7 +297,7 @@ if st.session_state.view == "🗺️ Xarita":
             <div class="map-info">
                 <div style="font-size:3rem;margin-bottom:8px;">{e}</div>
                 <div class="map-city">📍 {w['city']}, {w['country']}</div>
-                <div class="map-temp">{w['temp']:.1f}°</div>
+                <div class="map-temp">{w['temp']:.1f}°C</div>
                 <div style="color:#4060a0;font-size:0.9rem;margin-bottom:20px;">
                     {w['description'].title()} · His: {w['feels_like']:.1f}°C
                 </div>
@@ -326,21 +310,19 @@ if st.session_state.view == "🗺️ Xarita":
                     <tr><td>🌅 Quyosh chiqishi</td><td>{w['sunrise']}</td></tr>
                     <tr><td>🌇 Quyosh botishi</td><td>{w['sunset']}</td></tr>
                     <tr><td>🕐 Mahalliy vaqt</td><td>{w['local_time']} ({w['timezone']})</td></tr>
+                    <tr><td>📍 Koordinata</td><td>{w['lat']:.2f}°, {w['lon']:.2f}°</td></tr>
                 </table>
-                <div style="margin-top:16px;padding-top:16px;border-top:1px solid #1a2a45;
+                <div style="margin-top:14px;padding-top:14px;border-top:1px solid #1a2a45;
                             color:#304060;font-size:0.8rem;text-align:center;">
                     📅 {w['local_date']}
                 </div>
             </div>""", unsafe_allow_html=True)
 
-            # Mini radar
+            # Radar
             cats = ['Harorat','Namlik','Shamol','Bosim','Bulut']
-            vals = [
-                max(0, min(100, (w['temp']+20)/50*100)),
-                w['humidity'], min(100, w['wind_speed']*10),
-                max(0, min(100, (w['pressure']-950)/100*100)),
-                w['clouds']
-            ]
+            vals = [max(0,min(100,(w['temp']+20)/50*100)), w['humidity'],
+                    min(100,w['wind_speed']*10),
+                    max(0,min(100,(w['pressure']-950)/100*100)), w['clouds']]
             fig_r = go.Figure(go.Scatterpolar(
                 r=vals+[vals[0]], theta=cats+[cats[0]],
                 fill='toself', fillcolor='rgba(42,95,192,0.2)',
@@ -356,18 +338,18 @@ if st.session_state.view == "🗺️ Xarita":
                 ),
                 height=280, paper_bgcolor='rgba(0,0,0,0)',
                 margin=dict(l=40,r=40,t=10,b=10),
-                **{k: v for k, v in plotly_dark().items() if k not in ['paper_bgcolor','plot_bgcolor']}
+                template='plotly_dark'
             )
             st.plotly_chart(fig_r, use_container_width=True)
         else:
             st.markdown("""
-            <div class="map-info" style="text-align:center;padding:60px 20px;">
-                <div style="font-size:4rem;margin-bottom:16px;">🌍</div>
-                <div style="color:#4060a0;font-size:1.1rem;font-weight:600;">
-                    Quyidagi tugmalardan<br>shahar tanlang
+            <div class="map-info" style="text-align:center;padding:80px 20px;">
+                <div style="font-size:4rem;margin-bottom:16px;">🖱️</div>
+                <div style="color:#4060a0;font-size:1.2rem;font-weight:600;">
+                    Xaritada istalgan<br>joyni bosing!
                 </div>
-                <div style="color:#2a3a5a;font-size:0.85rem;margin-top:8px;">
-                    Ob-havo ma'lumoti shu yerda chiqadi
+                <div style="color:#2a3a5a;font-size:0.85rem;margin-top:12px;">
+                    Dunyoning istalgan nuqtasi<br>ob-havosi chiqadi
                 </div>
             </div>""", unsafe_allow_html=True)
 
@@ -386,57 +368,12 @@ elif st.session_state.do_search or st.session_state.search_city:
         ds = daily_summary(fc) if fc else None
 
     if not w:
-        st.error(f"❌ **{city}** topilmadi! Inglizcha yozing (masalan: Tashkent, London).")
+        st.error(f"❌ **{city}** topilmadi! Inglizcha yozing.")
         st.stop()
 
-    e = emo(w['description'])
-
-    # Hero karta
-    st.markdown(f"""
-    <div class="weather-hero">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:20px;">
-            <div>
-                <div class="hero-city">📍 {w['city']}, {w['country']}</div>
-                <div class="hero-date">{w['local_date']} · {w['local_time']} · {w['timezone']}</div>
-                <div style="font-size:4rem;margin:16px 0 4px;">{e}</div>
-                <div class="hero-desc">{w['description'].title()}</div>
-            </div>
-            <div style="text-align:right;">
-                <div class="hero-temp">{w['temp']:.1f}°</div>
-                <div class="hero-feels">His qilinadi: {w['feels_like']:.1f}°C</div>
-                <div style="color:#3050a0;font-size:0.85rem;margin-top:4px;">
-                    ↓ {w['temp_min']:.1f}° &nbsp;&nbsp; ↑ {w['temp_max']:.1f}°
-                </div>
-            </div>
-        </div>
-        <div class="sun-row">
-            <span class="sun-item">🌅 Chiqish: <b>{w['sunrise']}</b></span>
-            <span class="sun-item">🌇 Botish: <b>{w['sunset']}</b></span>
-            <span class="sun-item">☁️ Bulut: <b>{w['clouds']}%</b></span>
-            <span class="sun-item">📍 {w['lat']:.2f}°, {w['lon']:.2f}°</span>
-        </div>
-    </div>""", unsafe_allow_html=True)
-
-    # Stat kartalar
-    c1,c2,c3,c4 = st.columns(4)
-    for col, icon, val, lbl in [
-        (c1,"💧",f"{w['humidity']}%","Namlik"),
-        (c2,"💨",f"{w['wind_speed']} m/s","Shamol · "+wdir(w['wind_deg'])),
-        (c3,"🌀",f"{w['pressure']}","Bosim hPa"),
-        (c4,"👁️",f"{w['clouds']}%","Bulutlilik"),
-    ]:
-        with col:
-            st.markdown(f"""<div class="stat-card">
-                <div class="stat-icon">{icon}</div>
-                <div class="stat-val">{val}</div>
-                <div class="stat-lbl">{lbl}</div>
-            </div>""", unsafe_allow_html=True)
-
-    st.markdown("<br>", unsafe_allow_html=True)
-
+    show_hero(w)
     view = st.session_state.view
 
-    # SOATLIK
     if view == "📈 Soatlik" and fc:
         st.markdown('<div class="section-title">24 Soatlik Prognoz</div>', unsafe_allow_html=True)
         df = pd.DataFrame(fc[:8])
@@ -446,7 +383,6 @@ elif st.session_state.do_search or st.session_state.search_city:
                             vertical_spacing=0.18)
         fig.add_trace(go.Scatter(x=df['lbl'], y=df['temp'], mode='lines+markers', name='Harorat',
                                  line=dict(color='#4080ff', width=3),
-                                 marker=dict(size=8, color='#4080ff'),
                                  fill='tozeroy', fillcolor='rgba(64,128,255,0.08)'), row=1, col=1)
         fig.add_trace(go.Scatter(x=df['lbl'], y=df['temp_max'], mode='lines', name='Maks',
                                  line=dict(color='#ff6040', dash='dot', width=1.5)), row=1, col=1)
@@ -454,13 +390,9 @@ elif st.session_state.do_search or st.session_state.search_city:
                              marker_color='rgba(64,160,255,0.5)'), row=2, col=1)
         fig.add_trace(go.Scatter(x=df['lbl'], y=df['wind_speed'], mode='lines+markers', name='Shamol',
                                  line=dict(color='#a060ff', width=2)), row=2, col=1)
-        fig.update_layout(height=520, **plotly_dark(),
-                          legend=dict(orientation='h', y=-0.1))
-        fig.update_xaxes(gridcolor='rgba(255,255,255,0.03)')
-        fig.update_yaxes(gridcolor='rgba(255,255,255,0.03)')
+        fig.update_layout(height=520, **plotly_cfg(), legend=dict(orientation='h', y=-0.1))
         st.plotly_chart(fig, use_container_width=True)
 
-    # KUNLIK
     elif view == "📅 Kunlik" and ds:
         st.markdown('<div class="section-title">5 Kunlik Prognoz</div>', unsafe_allow_html=True)
         cols = st.columns(len(ds))
@@ -468,38 +400,32 @@ elif st.session_state.do_search or st.session_state.search_city:
             with cols[i]:
                 st.markdown(f"""<div class="day-card">
                     <div class="day-name">{day['day_name'][:3]}</div>
-                    <div class="day-emoji">{emo(day['desc'])}</div>
+                    <div style="font-size:2rem;margin:10px 0;">{emo(day['desc'])}</div>
                     <div class="day-temps">{day['temp_max']:.0f}° / {day['temp_min']:.0f}°</div>
-                    <div class="day-meta">💧{day['hum_avg']:.0f}% &nbsp; 🌧{day['pop_max']:.0f}%</div>
+                    <div class="day-meta">💧{day['hum_avg']:.0f}% 🌧{day['pop_max']:.0f}%</div>
                 </div>""", unsafe_allow_html=True)
-        st.markdown("<br>", unsafe_allow_html=True)
         df_s = pd.DataFrame(ds)
         fig2 = go.Figure()
-        fig2.add_trace(go.Bar(name='Maks °C', x=df_s['day_name'], y=df_s['temp_max'],
-                              marker_color='rgba(255,80,60,0.7)', marker_line_width=0))
-        fig2.add_trace(go.Bar(name='Min °C', x=df_s['day_name'], y=df_s['temp_min'],
-                              marker_color='rgba(64,160,255,0.7)', marker_line_width=0))
+        fig2.add_trace(go.Bar(name='Maks', x=df_s['day_name'], y=df_s['temp_max'],
+                              marker_color='rgba(255,80,60,0.7)'))
+        fig2.add_trace(go.Bar(name='Min', x=df_s['day_name'], y=df_s['temp_min'],
+                              marker_color='rgba(64,160,255,0.7)'))
         fig2.add_trace(go.Scatter(name="O'rtacha", x=df_s['day_name'], y=df_s['temp_avg'],
-                                  mode='lines+markers', line=dict(color='#ffd32a', width=2.5),
-                                  marker=dict(size=8)))
-        fig2.update_layout(height=360, barmode='group', **plotly_dark())
-        fig2.update_xaxes(gridcolor='rgba(255,255,255,0.03)')
-        fig2.update_yaxes(gridcolor='rgba(255,255,255,0.03)')
+                                  mode='lines+markers', line=dict(color='#ffd32a', width=2.5)))
+        fig2.update_layout(height=360, barmode='group', **plotly_cfg())
         st.plotly_chart(fig2, use_container_width=True)
 
-    # DASHBOARD
     elif view == "🎯 Dashboard":
-        st.markdown('<div class="section-title">Dashboard</div>', unsafe_allow_html=True)
-        c1, c2 = st.columns(2)
         cats = ['Harorat','Namlik','Shamol','Bosim','Bulut']
         vals = [max(0,min(100,(w['temp']+20)/50*100)), w['humidity'],
                 min(100,w['wind_speed']*10),
                 max(0,min(100,(w['pressure']-950)/100*100)), w['clouds']]
+        c1, c2 = st.columns(2)
         with c1:
             fig3 = go.Figure(go.Scatterpolar(
                 r=vals+[vals[0]], theta=cats+[cats[0]],
                 fill='toself', fillcolor='rgba(42,95,192,0.2)',
-                line=dict(color='#2a5fc0', width=2), marker=dict(size=7, color='#4080ff')
+                line=dict(color='#2a5fc0', width=2)
             ))
             fig3.update_layout(
                 polar=dict(radialaxis=dict(visible=True, range=[0,100],
@@ -507,7 +433,7 @@ elif st.session_state.do_search or st.session_state.search_city:
                            tickfont=dict(color='#4060a0')),
                            angularaxis=dict(tickfont=dict(color='#6080b0', size=12)),
                            bgcolor='rgba(0,0,0,0)'),
-                height=380, **plotly_dark()
+                height=380, **plotly_cfg()
             )
             st.plotly_chart(fig3, use_container_width=True)
         with c2:
@@ -518,10 +444,9 @@ elif st.session_state.do_search or st.session_state.search_city:
                                       name="Yog'in %", marker_color='rgba(64,160,255,0.6)'))
                 fig4.add_trace(go.Bar(x=df_s['day_name'], y=df_s['wind_avg'],
                                       name='Shamol m/s', marker_color='rgba(160,96,255,0.6)'))
-                fig4.update_layout(height=380, barmode='group', **plotly_dark())
+                fig4.update_layout(height=380, barmode='group', **plotly_cfg())
                 st.plotly_chart(fig4, use_container_width=True)
 
-    # ASOSIY — mini xarita
     elif view == "🏠 Asosiy":
         st.markdown('<div class="section-title">Joylashuv</div>', unsafe_allow_html=True)
         st.map(pd.DataFrame({'lat': [w['lat']], 'lon': [w['lon']]}), zoom=9)
@@ -533,10 +458,10 @@ else:
     st.markdown("""
     <div style="text-align:center;padding:60px 20px;">
         <div style="font-size:5rem;margin-bottom:16px;">⛅</div>
-        <div style="font-family:'Syne',sans-serif;font-size:2rem;font-weight:800;color:#2a5fc0;margin-bottom:8px;">
+        <div style="font-family:'Syne',sans-serif;font-size:2rem;font-weight:800;color:#2a5fc0;">
             WeatherXoja
         </div>
-        <div style="color:#2a3a5a;font-size:1rem;">
+        <div style="color:#2a3a5a;margin-top:8px;">
             Real vaqt ob-havo · 5 kunlik prognoz · Interaktiv xarita
         </div>
     </div>""", unsafe_allow_html=True)
