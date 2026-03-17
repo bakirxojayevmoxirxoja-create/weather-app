@@ -280,7 +280,7 @@ with st.sidebar:
     view = st.radio("Ko'rinish", ["🏠 Asosiy","📈 Soatlik","📅 Kunlik","🗺️ Interaktiv Xarita","🎯 Dashboard"])
     st.session_state.view = view
     st.markdown("---")
-    st.caption("⛅ WeatherXoja\nReal vaqt ob-havo\nPowered by OpenWeatherMap\n\n© 2025 WeatherXoja\nMuallif: bakirxojayevmoxirxoja")
+    st.caption("⛅ WeatherXoja\nReal vaqt ob-havo\nPowered by OpenWeatherMap\n\n© 2026 WeatherXoja\nMuallif: bakirxojayevmoxirxoja")
 
 st.markdown("# ⛅ WeatherXoja")
 
