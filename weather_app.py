@@ -1,3 +1,13 @@
+# ═══════════════════════════════════════════════════════════════
+# WeatherXoja — Real vaqt ob-havo tizimi
+# ═══════════════════════════════════════════════════════════════
+# Muallif   : bakirxojayevmoxirxoja
+# Sayt      : weatherxoja.streamlit.app
+# GitHub    : github.com/bakirxojayevmoxirxoja-create/weather-app
+# Litsenziya: MIT License
+# Copyright : © 2026 WeatherXoja. Barcha huquqlar himoyalangan.
+# ═══════════════════════════════════════════════════════════════
+
 import streamlit as st
 import requests
 import pandas as pd
@@ -270,7 +280,7 @@ with st.sidebar:
     view = st.radio("Ko'rinish", ["🏠 Asosiy","📈 Soatlik","📅 Kunlik","🗺️ Interaktiv Xarita","🎯 Dashboard"])
     st.session_state.view = view
     st.markdown("---")
-    st.caption("⛅ WeatherXoja\nReal vaqt ob-havo\nPowered by OpenWeatherMap")
+    st.caption("⛅ WeatherXoja\nReal vaqt ob-havo\nPowered by OpenWeatherMap\n\n© 2025 WeatherXoja\nMuallif: bakirxojayevmoxirxoja")
 
 st.markdown("# ⛅ WeatherXoja")
 
