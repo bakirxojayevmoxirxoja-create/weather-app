@@ -66,12 +66,53 @@ for k, v in [('map_weather', None), ('search_city', ''), ('do_search', False),
     if k not in st.session_state:
         st.session_state[k] = v
 
+# ── O'ZBEK/RUS → INGLIZ LUG'AT ──────────────────────────────────────────────
+CITY_ALIASES = {
+    "toshkent": "Tashkent", "samarqand": "Samarkand", "buxoro": "Bukhara",
+    "andijon": "Andijan", "farg'ona": "Fergana", "fargona": "Fergana",
+    "qarshi": "Karshi", "urganch": "Urgench", "termiz": "Termez",
+    "navoiy": "Navoi", "nukus": "Nukus",
+    "moskva": "Moscow", "moskow": "Moscow",
+    "peterburg": "Saint Petersburg", "sankt-peterburg": "Saint Petersburg",
+    "parij": "Paris", "pariz": "Paris",
+    "nyu-york": "New York", "nyyork": "New York",
+    "tokio": "Tokyo", "pekin": "Beijing", "rim": "Rome",
+    "dubay": "Dubai", "stambul": "Istanbul", "qohira": "Cairo",
+    "mumbay": "Mumbai", "sidney": "Sydney", "singapur": "Singapore",
+    "toronto": "Toronto", "seul": "Seoul", "bangkok": "Bangkok",
+}
+
+@st.cache_data(ttl=600)
+def geocode_city(city_name):
+    try:
+        url = f"http://api.openweathermap.org/geo/1.0/direct?q={city_name}&limit=3&appid={API_KEY}"
+        r = requests.get(url, timeout=10)
+        if r.status_code == 200:
+            data = r.json()
+            if data:
+                return data[0]["lat"], data[0]["lon"]
+    except:
+        pass
+    return None, None
+
+def resolve_city(city_input):
+    """Lug'at + geocoding orqali shaharni aniqlash"""
+    key = city_input.strip().lower()
+    if key in CITY_ALIASES:
+        return CITY_ALIASES[key]
+    return city_input
+
 # ── FUNKSIYALAR ───────────────────────────────────────────────────────────────
 @st.cache_data(ttl=600)
 def fetch_weather(city=None, lat=None, lon=None):
     try:
         if city:
-            url = f"{BASE_URL}weather?q={city}&appid={API_KEY}&units=metric"
+            resolved = resolve_city(city)
+            lat_g, lon_g = geocode_city(resolved)
+            if lat_g and lon_g:
+                url = f"{BASE_URL}weather?lat={lat_g}&lon={lon_g}&appid={API_KEY}&units=metric"
+            else:
+                url = f"{BASE_URL}weather?q={resolved}&appid={API_KEY}&units=metric"
         else:
             url = f"{BASE_URL}weather?lat={lat}&lon={lon}&appid={API_KEY}&units=metric"
         r = requests.get(url, timeout=10)
@@ -84,7 +125,13 @@ def fetch_weather(city=None, lat=None, lon=None):
 @st.cache_data(ttl=600)
 def fetch_forecast(city):
     try:
-        r = requests.get(f"{BASE_URL}forecast?q={city}&appid={API_KEY}&units=metric", timeout=10)
+        resolved = resolve_city(city)
+        lat_g, lon_g = geocode_city(resolved)
+        if lat_g and lon_g:
+            fc_url = f"{BASE_URL}forecast?lat={lat_g}&lon={lon_g}&appid={API_KEY}&units=metric"
+        else:
+            fc_url = f"{BASE_URL}forecast?q={resolved}&appid={API_KEY}&units=metric"
+        r = requests.get(fc_url, timeout=10)
         if r.status_code == 200:
             d = r.json()
             tz = d['city']['timezone']
